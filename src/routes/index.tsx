@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Anchor, Search, MapPin, Users, Sailboat } from "lucide-react";
 import heroLake from "@/assets/hero-lake.jpg";
@@ -13,6 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { browseBoatsQuery, publicLakesQuery } from "@/lib/public-catalog";
+import { myProfileQuery } from "@/lib/marina-queries";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -43,6 +46,15 @@ function Landing() {
 }
 
 function Header() {
+  const navigate = useNavigate();
+  const { data: profile, isLoading } = useQuery(myProfileQuery());
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    toast.success("Signed out successfully");
+    navigate({ to: "/", replace: true });
+  }
+
   return (
     <header className="absolute inset-x-0 top-0 z-20">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
@@ -58,19 +70,44 @@ function Header() {
             For marinas
           </a>
         </nav>
-        <div className="flex items-center gap-2">
-          <Link
-            to="/auth"
-            search={{}}
-            className="hidden text-sm text-primary-foreground/90 hover:text-primary-foreground sm:inline"
-          >
-            Sign in
-          </Link>
-          <Link to="/dashboard">
-            <Button size="sm" variant="secondary">
-              Marina Dashboard
-            </Button>
-          </Link>
+        <div className="flex items-center gap-4">
+          {!isLoading && profile ? (
+            <>
+              <span className="hidden text-sm text-primary-foreground/90 sm:inline">
+                Hello, {profile.full_name || profile.email}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+                onClick={handleSignOut}
+              >
+                Sign out
+              </Button>
+              {profile.account_type === "marina" && (
+                <Link to="/dashboard">
+                  <Button size="sm" variant="secondary">
+                    Marina Dashboard
+                  </Button>
+                </Link>
+              )}
+            </>
+          ) : (
+            <>
+              <Link
+                to="/auth"
+                search={{}}
+                className="hidden text-sm text-primary-foreground/90 hover:text-primary-foreground sm:inline"
+              >
+                Sign in
+              </Link>
+              <Link to="/dashboard">
+                <Button size="sm" variant="secondary">
+                  Marina Dashboard
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

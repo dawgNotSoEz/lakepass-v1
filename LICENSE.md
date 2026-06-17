@@ -11,6 +11,7 @@ The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
 REMAINING TERMS:
+
 1. Use, Modification, and Deployment are allowed.
 2. Visible attribution to the original author (Savitender Singh) is required on all public deployments and derivative works.
 3. Failure to comply with attribution requirements immediately terminates rights granted under this license.

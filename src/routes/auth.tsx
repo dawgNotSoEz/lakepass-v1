@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Anchor } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -64,13 +64,28 @@ function AuthPage() {
     setAccountTypeState(value);
   }
 
-  // If already signed in, route once by the saved role instead of bouncing through role selection.
+  const handleNavigationAfterSignIn = useCallback(
+    async (userId: string) => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("account_type")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const role = profile?.account_type || storedAccountType();
+      navigate({ to: destinationFor(role, target), replace: true });
+    },
+    [navigate, target],
+  );
+
+  // If already signed in, check their profile role to redirect them to the correct dashboard.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session)
-        navigate({ to: destinationFor(storedAccountType(), target), replace: true });
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session) {
+        await handleNavigationAfterSignIn(data.session.user.id);
+      }
     });
-  }, [navigate, target]);
+  }, [navigate, target, handleNavigationAfterSignIn]);
 
   async function routeAfterAuth(userId: string) {
     const chosen = storedAccountType();
@@ -113,7 +128,7 @@ function AuthPage() {
           password: parsed.data.password,
         });
         if (error) throw error;
-        if (res.user) await routeAfterAuth(res.user.id);
+        if (res.user) await handleNavigationAfterSignIn(res.user.id);
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Something went wrong");
