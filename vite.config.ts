@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     tanstackStart(),
     nitro({
-      preset: "cloudflare-module",
+      preset: "vercel",
     }),
     react(),
   ],
