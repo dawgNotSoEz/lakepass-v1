@@ -6,6 +6,7 @@ import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { signUpUser } from "@/lib/api/stripe.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -72,7 +73,11 @@ function AuthPage() {
         .eq("id", userId)
         .maybeSingle();
 
-      const role = profile?.account_type || storedAccountType();
+      const role = profile?.account_type;
+      if (!role) {
+        navigate({ to: "/welcome", search: { redirect: target || undefined }, replace: true });
+        return;
+      }
       navigate({ to: destinationFor(role, target), replace: true });
     },
     [navigate, target],
@@ -86,12 +91,6 @@ function AuthPage() {
       }
     });
   }, [navigate, target, handleNavigationAfterSignIn]);
-
-  async function routeAfterAuth(userId: string) {
-    const chosen = storedAccountType();
-    await supabase.from("profiles").update({ account_type: chosen }).eq("id", userId);
-    navigate({ to: destinationFor(chosen, target), replace: true });
-  }
 
   async function handleEmail(mode: "signin" | "signup", form: HTMLFormElement) {
     const data = new FormData(form);
@@ -107,20 +106,25 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { data: res, error } = await supabase.auth.signUp({
-          email: parsed.data.email,
-          password: parsed.data.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}${target}`,
-            data: { full_name: parsed.data.full_name, account_type: accountType },
+        await signUpUser({
+          data: {
+            email: parsed.data.email,
+            password: parsed.data.password,
+            fullName: parsed.data.full_name,
+            accountType: accountType,
           },
         });
-        if (error) throw error;
-        if (res.session) {
-          toast.success("Account created and logged in!");
-          await routeAfterAuth(res.user!.id);
-        } else {
-          toast.success("Account created! Please check your inbox to confirm your email address.");
+
+        // Sign in immediately since it is auto-confirmed on the server
+        const { data: loginRes, error: loginErr } = await supabase.auth.signInWithPassword({
+          email: parsed.data.email,
+          password: parsed.data.password,
+        });
+        if (loginErr) throw loginErr;
+
+        toast.success("Account created and logged in!");
+        if (loginRes.user) {
+          await handleNavigationAfterSignIn(loginRes.user.id);
         }
       } else {
         const { data: res, error } = await supabase.auth.signInWithPassword({
@@ -143,7 +147,7 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}${target}`,
+          redirectTo: `${window.location.origin}/auth?redirect=${encodeURIComponent(target)}`,
         },
       });
       if (error) {

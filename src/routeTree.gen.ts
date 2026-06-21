@@ -13,6 +13,7 @@ import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WaiverReservationIdRouteImport } from './routes/waiver.$reservationId'
 import { Route as BoatBoatIdRouteImport } from './routes/boat.$boatId'
 import { Route as AuthenticatedWelcomeRouteImport } from './routes/_authenticated/welcome'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
@@ -35,6 +36,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WaiverReservationIdRoute = WaiverReservationIdRouteImport.update({
+  id: '/waiver/$reservationId',
+  path: '/waiver/$reservationId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoatBoatIdRoute = BoatBoatIdRouteImport.update({
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/welcome': typeof AuthenticatedWelcomeRoute
   '/boat/$boatId': typeof BoatBoatIdRoute
+  '/waiver/$reservationId': typeof WaiverReservationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/welcome': typeof AuthenticatedWelcomeRoute
   '/boat/$boatId': typeof BoatBoatIdRoute
+  '/waiver/$reservationId': typeof WaiverReservationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/welcome': typeof AuthenticatedWelcomeRoute
   '/boat/$boatId': typeof BoatBoatIdRoute
+  '/waiver/$reservationId': typeof WaiverReservationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/welcome'
     | '/boat/$boatId'
+    | '/waiver/$reservationId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/welcome'
     | '/boat/$boatId'
+    | '/waiver/$reservationId'
   id:
     | '__root__'
     | '/'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/welcome'
     | '/boat/$boatId'
+    | '/waiver/$reservationId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -124,6 +136,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BrowseRoute: typeof BrowseRoute
   BoatBoatIdRoute: typeof BoatBoatIdRoute
+  WaiverReservationIdRoute: typeof WaiverReservationIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -154,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/waiver/$reservationId': {
+      id: '/waiver/$reservationId'
+      path: '/waiver/$reservationId'
+      fullPath: '/waiver/$reservationId'
+      preLoaderRoute: typeof WaiverReservationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/boat/$boatId': {
@@ -208,6 +228,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BrowseRoute: BrowseRoute,
   BoatBoatIdRoute: BoatBoatIdRoute,
+  WaiverReservationIdRoute: WaiverReservationIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

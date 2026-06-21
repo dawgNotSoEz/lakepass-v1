@@ -2,7 +2,9 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { Anchor, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
+import { Header } from "@/components/header";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +24,8 @@ const searchSchema = z.object({
   boatType: fallback(z.string().optional(), undefined),
   guests: fallback(z.number().int().min(1).max(50).optional(), undefined),
   maxPrice: fallback(z.number().min(0).max(10000).optional(), undefined),
+  widget: fallback(z.string().optional(), undefined),
+  marinaId: fallback(z.string().optional(), undefined),
 });
 
 export const Route = createFileRoute("/browse")({
@@ -47,23 +51,41 @@ function BrowsePage() {
   const { data: lakes } = useQuery(publicLakesQuery());
   const { data: boats, isLoading } = useQuery(browseBoatsQuery(search));
 
+  const isWidget = search.widget === "true";
+
+  // Query details of the marina if in widget mode to apply branding
+  const { data: widgetMarina } = useQuery({
+    queryKey: ["public", "marina", search.marinaId],
+    enabled: isWidget && !!search.marinaId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("marinas")
+        .select("id, name, widget_primary_color, widget_font, widget_logo_url")
+        .eq("id", search.marinaId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const primaryColor = widgetMarina?.widget_primary_color ?? "#0B4F6C";
+  const font = widgetMarina?.widget_font ?? "Outfit";
+
   function update(patch: Partial<typeof search>) {
     navigate({ search: (prev: typeof search) => ({ ...prev, ...patch }) });
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-20 border-b bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center gap-2">
-            <Anchor className="h-5 w-5 text-primary" />
-            <span className="font-display text-lg font-semibold">Lake Pass</span>
-          </Link>
-          <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground">
-            Marina Dashboard
-          </Link>
-        </div>
-      </header>
+    <div
+      className="min-h-screen bg-background animate-in fade-in"
+      style={
+        {
+          "--primary": primaryColor,
+          fontFamily: font,
+        } as React.CSSProperties
+      }
+    >
+      {!isWidget && <Header variant="light" />}
 
       <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-[260px_1fr]">
         <aside className="space-y-6 md:sticky md:top-24 md:self-start">

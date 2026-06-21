@@ -15,6 +15,12 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import {
+  createMarina,
+  updateMarina,
+  importMarinaBoats,
+  finishMarinaOnboarding,
+} from "@/lib/api/stripe.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -111,29 +117,25 @@ function OnboardingWizard() {
 
       let marinaId = state.marinaId;
       if (marinaId) {
-        const { error } = await supabase
-          .from("marinas")
-          .update({
+        await updateMarina({
+          data: {
+            id: marinaId,
             name: parsed.data.name,
             address: parsed.data.address || null,
             lake: parsed.data.lake,
             timezone: parsed.data.timezone,
-          })
-          .eq("id", marinaId);
-        if (error) throw error;
+          },
+        });
       } else {
-        const { data, error } = await supabase
-          .from("marinas")
-          .insert({
+        const data = await createMarina({
+          data: {
             name: parsed.data.name,
             address: parsed.data.address || null,
             lake: parsed.data.lake,
             timezone: parsed.data.timezone,
-            created_by: auth.user.id,
-          })
-          .select("id")
-          .single();
-        if (error) throw error;
+            userId: auth.user.id,
+          },
+        });
         marinaId = data.id;
       }
       setState((s) => ({ ...s, marinaId }));
@@ -157,18 +159,13 @@ function OnboardingWizard() {
     }
     setSaving(true);
     try {
-      const rows = state.boats.map((b) => ({
-        marina_id: state.marinaId!,
-        name: b.name,
-        boat_type: b.boat_type,
-        capacity: b.capacity,
-        year: b.year ?? null,
-        hourly_rate: b.hourly_rate ?? null,
-        daily_rate: b.daily_rate ?? null,
-      }));
-      const { error } = await supabase.from("boats").insert(rows);
-      if (error) throw error;
-      toast.success(`Imported ${rows.length} boat${rows.length === 1 ? "" : "s"}`);
+      await importMarinaBoats({
+        data: {
+          marinaId: state.marinaId,
+          boats: state.boats,
+        },
+      });
+      toast.success(`Imported ${state.boats.length} boat${state.boats.length === 1 ? "" : "s"}`);
       setState((s) => ({ ...s, boats: [] }));
       setStep(2);
     } catch (e) {
@@ -182,16 +179,14 @@ function OnboardingWizard() {
     if (!state.marinaId) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from("marinas")
-        .update({
-          widget_primary_color: state.widget.primary_color,
-          widget_font: state.widget.font,
-          widget_logo_url: state.widget.logo_url || null,
-          onboarding_completed: true,
-        })
-        .eq("id", state.marinaId);
-      if (error) throw error;
+      await finishMarinaOnboarding({
+        data: {
+          id: state.marinaId,
+          primaryColor: state.widget.primary_color,
+          font: state.widget.font,
+          logoUrl: state.widget.logo_url || null,
+        },
+      });
       await qc.invalidateQueries({ queryKey: ["marina", "me"] });
       toast.success("You're all set!");
       navigate({ to: "/dashboard" });

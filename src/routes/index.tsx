@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Anchor, Search, MapPin, Users, Sailboat } from "lucide-react";
 import heroLake from "@/assets/hero-lake.jpg";
@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/select";
 import { browseBoatsQuery, publicLakesQuery } from "@/lib/public-catalog";
 import { myProfileQuery } from "@/lib/marina-queries";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Header } from "@/components/header";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -35,114 +35,64 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="h-screen overflow-y-auto scroll-smooth snap-y snap-mandatory bg-background text-foreground">
       <Header />
       <Hero />
       <FeaturedBoats />
-      <ForMarinas />
-      <Footer />
+      <ForMarinasSection />
     </div>
   );
 }
 
-function Header() {
-  const navigate = useNavigate();
+function Hero() {
   const { data: profile, isLoading } = useQuery(myProfileQuery());
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    toast.success("Signed out successfully");
-    navigate({ to: "/", replace: true });
-  }
-
   return (
-    <header className="absolute inset-x-0 top-0 z-20">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <Link to="/" className="flex items-center gap-2 text-primary-foreground">
-          <Anchor className="h-5 w-5" />
-          <span className="font-display text-lg font-semibold tracking-tight">Lake Pass</span>
-        </Link>
-        <nav className="hidden items-center gap-8 text-sm text-primary-foreground/85 md:flex">
-          <Link to="/browse" search={{}} className="hover:text-primary-foreground">
-            Browse boats
-          </Link>
-          <a href="#for-marinas" className="hover:text-primary-foreground">
-            For marinas
-          </a>
-        </nav>
-        <div className="flex items-center gap-4">
-          {!isLoading && profile ? (
-            <>
-              <span className="hidden text-sm text-primary-foreground/90 sm:inline">
-                Hello, {profile.full_name || profile.email}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
-                onClick={handleSignOut}
-              >
-                Sign out
-              </Button>
-              {profile.account_type === "marina" && (
-                <Link to="/dashboard">
-                  <Button size="sm" variant="secondary">
-                    Marina Dashboard
-                  </Button>
-                </Link>
-              )}
-            </>
-          ) : (
-            <>
-              <Link
-                to="/auth"
-                search={{}}
-                className="hidden text-sm text-primary-foreground/90 hover:text-primary-foreground sm:inline"
-              >
-                Sign in
-              </Link>
-              <Link to="/dashboard">
-                <Button size="sm" variant="secondary">
-                  Marina Dashboard
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function Hero() {
-  return (
-    <section className="relative isolate overflow-hidden">
+    <section className="relative isolate overflow-hidden h-[calc(100vh-73px)] min-h-[600px] flex flex-col justify-center snap-start snap-always">
       <img
         src={heroLake}
         alt="Aerial view of a calm lake at golden hour"
         className="absolute inset-0 -z-10 h-full w-full object-cover"
       />
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-deep/80 via-deep/55 to-deep/85" />
-      <div className="mx-auto max-w-7xl px-6 pb-40 pt-36 sm:pb-48 sm:pt-44">
-        <div className="max-w-2xl">
-          <h1 className="font-display text-5xl font-semibold leading-[1.05] text-primary-foreground sm:text-6xl">
-            Find your boat.
-            <br /> Lose the dock line.
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-primary-foreground/85">
-            Real-time availability across the best marinas on Table Rock, Lake Murray, and more.
-            Pick a lake, pick a boat, push off.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/auth" search={{}}>
-              <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
-                Let's get started
-              </Button>
-            </Link>
+      <div className="mx-auto max-w-7xl px-6 w-full">
+        <ScrollReveal>
+          <div className="max-w-2xl">
+            <h1 className="font-display text-5xl font-semibold leading-[1.05] text-primary-foreground sm:text-6xl">
+              Find your boat.
+              <br /> Lose the dock line.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-primary-foreground/85">
+              Real-time availability across the best marinas on Table Rock, Lake Murray, and more.
+              Pick a lake, pick a boat, push off.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {!isLoading && profile ? (
+                profile.account_type === "marina" ? (
+                  <Link to="/dashboard">
+                    <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-soft hover:shadow-lift transition-all duration-350">
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link to="/browse" search={{}}>
+                    <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-soft hover:shadow-lift transition-all duration-350">
+                      Browse Boats
+                    </Button>
+                  </Link>
+                )
+              ) : (
+                <Link to="/auth" search={{}}>
+                  <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-soft hover:shadow-lift transition-all duration-350">
+                    Let's get started
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
 
-        <SearchPanel />
+          <SearchPanel />
+        </ScrollReveal>
       </div>
     </section>
   );
@@ -245,38 +195,57 @@ function FeaturedBoats() {
   const featured = (boats ?? []).slice(0, 3);
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-24">
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-widest text-primary">
-            Featured boats
-          </p>
-          <h2 className="mt-2 font-display text-4xl font-semibold">Trending this week</h2>
-        </div>
-        <Link
-          to="/browse"
-          search={{}}
-          className="hidden text-sm font-medium text-primary hover:underline sm:inline"
-        >
-          See all boats →
-        </Link>
-      </div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {featured.length === 0 && (
-          <div className="col-span-full rounded-2xl border border-dashed bg-card p-12 text-center text-muted-foreground">
-            No boats listed yet — check back soon.
+    <section className="h-[calc(100vh-73px)] min-h-[650px] flex flex-col justify-center snap-start snap-always scroll-mt-[73px] mx-auto max-w-7xl px-6 w-full">
+      <ScrollReveal className="w-full space-y-10">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-widest text-primary">
+              Featured boats
+            </p>
+            <h2 className="mt-2 font-display text-4xl font-semibold">Trending this week</h2>
           </div>
-        )}
-        {featured.map((b) => (
-          <BoatCard key={b.id} boat={b} />
-        ))}
-      </div>
+          <Link
+            to="/browse"
+            search={{}}
+            className="hidden text-sm font-medium text-primary hover:underline sm:inline"
+          >
+            See all boats →
+          </Link>
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {featured.length === 0 && (
+            <div className="col-span-full rounded-2xl border border-dashed bg-card p-12 text-center text-muted-foreground">
+              No boats listed yet — check back soon.
+            </div>
+          )}
+          {featured.map((b) => (
+            <BoatCard key={b.id} boat={b} />
+          ))}
+        </div>
+      </ScrollReveal>
     </section>
   );
 }
 
+export function getBoatFallbackImage(type?: string): string {
+  const t = type?.toLowerCase() || "";
+  if (t.includes("pontoon")) {
+    return "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?auto=format&fit=crop&w=600&q=80";
+  }
+  if (t.includes("fish")) {
+    return "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80";
+  }
+  if (t.includes("ski") || t.includes("wake") || t.includes("speed")) {
+    return "https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=600&q=80";
+  }
+  if (t.includes("deck")) {
+    return "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=600&q=80";
+  }
+  return "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&w=600&q=80";
+}
+
 export function BoatCard({ boat }: { boat: import("@/lib/public-catalog").PublicBoatRow }) {
-  const photo = boat.photos?.[0];
+  const photo = boat.photos?.[0] || getBoatFallbackImage(boat.boat_type);
   return (
     <Link
       to="/boat/$boatId"
@@ -284,17 +253,11 @@ export function BoatCard({ boat }: { boat: import("@/lib/public-catalog").Public
       className="group block overflow-hidden rounded-2xl border bg-card shadow-soft transition hover:shadow-lift"
     >
       <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-secondary to-secondary/40">
-        {photo ? (
-          <img
-            src={photo}
-            alt={boat.name}
-            className="h-full w-full object-cover transition group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            <Sailboat className="h-12 w-12 opacity-40" />
-          </div>
-        )}
+        <img
+          src={photo}
+          alt={boat.name}
+          className="h-full w-full object-cover transition group-hover:scale-105"
+        />
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
@@ -321,11 +284,13 @@ export function BoatCard({ boat }: { boat: import("@/lib/public-catalog").Public
   );
 }
 
-function ForMarinas() {
+function ForMarinasSection() {
+  const { data: profile, isLoading } = useQuery(myProfileQuery());
+
   return (
-    <section id="for-marinas" className="bg-secondary/50 py-24">
-      <div className="mx-auto max-w-7xl px-6">
-        <div className="grid items-center gap-12 md:grid-cols-2">
+    <section className="h-[calc(100vh-73px)] min-h-[600px] flex flex-col justify-between snap-start snap-always scroll-mt-[73px] bg-secondary/50">
+      <div className="flex-1 flex items-center mx-auto max-w-7xl px-6 w-full py-8">
+        <ScrollReveal className="grid items-center gap-12 md:grid-cols-2 w-full">
           <div>
             <p className="text-sm font-medium uppercase tracking-widest text-primary">
               For marinas
@@ -337,9 +302,28 @@ function ForMarinas() {
               Real-time bookings, online payments, and one calendar for your whole dock. Setup takes
               about ten minutes.
             </p>
-            <Link to="/auth" className="mt-8 inline-block">
-              <Button size="lg">List your marina</Button>
-            </Link>
+            <div className="mt-8">
+              {!isLoading && profile ? (
+                profile.account_type === "marina" ? (
+                  <Link to="/dashboard">
+                    <Button size="lg" className="shadow-soft hover:shadow-lift transition-all">Go to Dashboard</Button>
+                  </Link>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Interested in listing a marina? Switch your account type to Marina staff.
+                    </p>
+                    <Link to="/welcome">
+                      <Button size="lg" className="shadow-soft hover:shadow-lift transition-all">Switch to Marina Account</Button>
+                    </Link>
+                  </div>
+                )
+              ) : (
+                <Link to="/auth" search={{}}>
+                  <Button size="lg" className="shadow-soft hover:shadow-lift transition-all">List your marina</Button>
+                </Link>
+              )}
+            </div>
           </div>
           <div className="rounded-3xl bg-gradient-deep p-10 text-primary-foreground shadow-lift">
             <p className="font-display text-2xl leading-snug">
@@ -349,16 +333,17 @@ function ForMarinas() {
               — Marina operator, Table Rock Lake
             </p>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
+      <Footer />
     </section>
   );
 }
 
 function Footer() {
   return (
-    <footer className="border-t bg-background">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-10 sm:flex-row">
+    <footer className="border-t bg-background w-full py-6">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Anchor className="h-4 w-4" />
           <span className="text-sm">© {new Date().getFullYear()} Lake Pass</span>
@@ -368,5 +353,40 @@ function Footer() {
         </p>
       </div>
     </footer>
+  );
+}
+
+function ScrollReveal({ children, className }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [isIntersecting, setIsIntersecting] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+      },
+      {
+        threshold: 0.15,
+      }
+    );
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "transition-all duration-1000 ease-out transform w-full",
+        isIntersecting
+          ? "opacity-100 translate-y-0 scale-100 animate-in fade-in zoom-in duration-1000"
+          : "opacity-0 translate-y-8 scale-95",
+        className
+      )}
+    >
+      {children}
+    </div>
   );
 }

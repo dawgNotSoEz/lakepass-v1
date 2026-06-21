@@ -21,6 +21,7 @@ export type BrowseFilters = {
   boatType?: string;
   guests?: number;
   maxPrice?: number;
+  marinaId?: string;
 };
 
 const BOAT_FLEET_PHOTOS = [
@@ -56,6 +57,7 @@ export function browseBoatsQuery(filters: BrowseFilters) {
       if (filters.guests) q = q.gte("capacity", filters.guests);
       if (filters.maxPrice) q = q.lte("hourly_rate", filters.maxPrice);
       if (filters.lake && filters.lake !== "Any") q = q.eq("marinas.lake", filters.lake);
+      if (filters.marinaId) q = q.eq("marina_id", filters.marinaId);
       const { data, error } = await q;
       if (error) throw error;
       return ((data ?? []) as unknown as PublicBoatRow[]).map(withBoatFleetPhoto);

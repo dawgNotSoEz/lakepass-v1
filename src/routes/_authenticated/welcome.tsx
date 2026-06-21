@@ -3,19 +3,28 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Anchor, Ship, User } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { myProfileQuery } from "@/lib/marina-queries";
 import { cn } from "@/lib/utils";
 
+const searchSchema = z.object({
+  redirect: fallback(z.string().optional(), undefined),
+});
+
 export const Route = createFileRoute("/_authenticated/welcome")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "Welcome — Lake Pass" }] }),
   component: WelcomePage,
 });
 
 function WelcomePage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  const target = search.redirect || "";
   const qc = useQueryClient();
   const { data: profile, isLoading } = useQuery(myProfileQuery());
   const [choice, setChoice] = useState<"customer" | "marina" | null>(null);
@@ -24,9 +33,12 @@ function WelcomePage() {
   // If already chose a role, bounce.
   useEffect(() => {
     if (isLoading) return;
-    if (profile?.account_type === "marina") navigate({ to: "/dashboard", replace: true });
-    else if (profile?.account_type === "customer") navigate({ to: "/", replace: true });
-  }, [profile, isLoading, navigate]);
+    if (profile?.account_type === "marina") {
+      navigate({ to: target || "/dashboard", replace: true });
+    } else if (profile?.account_type === "customer") {
+      navigate({ to: target || "/", replace: true });
+    }
+  }, [profile, isLoading, navigate, target]);
 
   async function save() {
     if (!choice || !profile) return;
@@ -39,7 +51,7 @@ function WelcomePage() {
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ["profile", "me"] });
       toast.success("You're all set!");
-      navigate({ to: choice === "marina" ? "/dashboard" : "/", replace: true });
+      navigate({ to: target || (choice === "marina" ? "/dashboard" : "/"), replace: true });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");
     } finally {
